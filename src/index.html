@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Campus Club Members</title>
+
+</head>
+
+
+<body>
+
+    <h1>Campus Club Members</h1>
+
+
+    <!-- ============================= -->
+    <!-- ADD MEMBER -->
+    <!-- ============================= -->
+
+    <h2>Add Club Member</h2>
+
+    <form id="memberForm">
+
+        <label>Member ID:</label>
+        <input
+            type="text"
+            id="memberId"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Name:</label>
+        <input
+            type="text"
+            id="name"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Club Name:</label>
+        <input
+            type="text"
+            id="clubName"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Year of Study:</label>
+        <input
+            type="number"
+            id="yearOfStudy"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Role:</label>
+        <input
+            type="text"
+            id="role"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Points:</label>
+        <input
+            type="number"
+            id="points"
+            required
+        >
+
+        <br><br>
+
+
+        <label>Interests:</label>
+        <input
+            type="text"
+            id="interests"
+            placeholder="Java, Web Development"
+        >
+
+        <br><br>
+
+
+        <label>Status:</label>
+        <input
+            type="text"
+            id="status"
+            required
+        >
+
+        <br><br>
+
+
+        <button type="submit">
+            Add Member
+        </button>
+
+    </form>
+
+
+    <hr>
+
+
+    <!-- ============================= -->
+    <!-- DISPLAY ALL -->
+    <!-- ============================= -->
+
+    <h2>Display Members</h2>
+
+    <button onclick="getMembers()">
+        Display All Members
+    </button>
+
+
+    <br><br>
+
+
+    <!-- ============================= -->
+    <!-- FIND MEMBER -->
+    <!-- ============================= -->
+
+    <h2>Find Member</h2>
+
+    <input
+        type="text"
+        id="searchId"
+        placeholder="Enter Member ID"
+    >
+
+    <button onclick="findMember()">
+        Find Member
+    </button>
+
+
+    <button onclick="showDetails()">
+        Show Name, Club, Role, Points
+    </button>
+
+
+    <button onclick="deleteMember()">
+        Delete Member
+    </button>
+
+
+    <br><br>
+
+
+    <!-- ============================= -->
+    <!-- FILTER MEMBERS -->
+    <!-- ============================= -->
+
+    <h2>Filter Members</h2>
+
+    <input
+        type="text"
+        id="filterClub"
+        placeholder="Club Name"
+    >
+
+    <input
+        type="number"
+        id="filterPoints"
+        placeholder="Minimum Points"
+    >
+
+    <button onclick="filterMembers()">
+        Filter Members
+    </button>
+
+
+    <hr>
+
+
+    <!-- ============================= -->
+    <!-- OUTPUT -->
+    <!-- ============================= -->
+
+    <h2>Output</h2>
+
+    <pre id="output"></pre>
+
+
+
+    <script>
+
+
+        // ===================================
+        // ADD MEMBER
+        // ===================================
+
+        document
+            .getElementById("memberForm")
+            .addEventListener("submit", async function(event) {
+
+                event.preventDefault();
+
+
+                const member = {
+
+                    memberId:
+                        document
+                        .getElementById("memberId")
+                        .value,
+
+                    name:
+                        document
+                        .getElementById("name")
+                        .value,
+
+                    clubName:
+                        document
+                        .getElementById("clubName")
+                        .value,
+
+                    yearOfStudy:
+                        Number(
+                            document
+                            .getElementById("yearOfStudy")
+                            .value
+                        ),
+
+                    role:
+                        document
+                        .getElementById("role")
+                        .value,
+
+                    points:
+                        Number(
+                            document
+                            .getElementById("points")
+                            .value
+                        ),
+
+                    interests:
+                        document
+                        .getElementById("interests")
+                        .value
+                        .split(",")
+                        .map(item => item.trim())
+                        .filter(item => item !== ""),
+
+                    status:
+                        document
+                        .getElementById("status")
+                        .value
+                };
+
+
+                try {
+
+                    const response = await fetch(
+                        "/members",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(member)
+                        }
+                    );
+
+
+                    const data =
+                        await response.json();
+
+
+                    document
+                        .getElementById("output")
+                        .textContent =
+                        JSON.stringify(
+                            data,
+                            null,
+                            2
+                        );
+
+
+                } catch (error) {
+
+                    document
+                        .getElementById("output")
+                        .textContent =
+                        error.message;
+
+                }
+
+            });
+
+
+
+        // ===================================
+        // DISPLAY ALL MEMBERS
+        // ===================================
+
+        async function getMembers() {
+
+            try {
+
+                const response =
+                    await fetch("/members");
+
+
+                const data =
+                    await response.json();
+
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+            } catch (error) {
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    error.message;
+
+            }
+
+        }
+
+
+
+        // ===================================
+        // FIND MEMBER
+        // ===================================
+
+        async function findMember() {
+
+            const id =
+                document
+                .getElementById("searchId")
+                .value;
+
+
+            if (id === "") {
+
+                alert("Please enter Member ID");
+
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/members/id/" + id
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+            } catch (error) {
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    error.message;
+
+            }
+
+        }
+
+
+
+        // ===================================
+        // DISPLAY SELECTED FIELDS
+        // ===================================
+
+        async function showDetails() {
+
+            const id =
+                document
+                .getElementById("searchId")
+                .value;
+
+
+            if (id === "") {
+
+                alert("Please enter Member ID");
+
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/members/details/" + id
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+            } catch (error) {
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    error.message;
+
+            }
+
+        }
+
+
+
+        // ===================================
+        // FILTER MEMBERS
+        // ===================================
+
+        async function filterMembers() {
+
+            const club =
+                document
+                .getElementById("filterClub")
+                .value;
+
+
+            const points =
+                document
+                .getElementById("filterPoints")
+                .value;
+
+
+            if (club === "" || points === "") {
+
+                alert(
+                    "Please enter Club Name and Points"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/members/filter/"
+                        + club
+                        + "/"
+                        + points
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+            } catch (error) {
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    error.message;
+
+            }
+
+        }
+
+
+
+        // ===================================
+        // DELETE MEMBER
+        // ===================================
+
+        async function deleteMember() {
+
+            const id =
+                document
+                .getElementById("searchId")
+                .value;
+
+
+            if (id === "") {
+
+                alert("Please enter Member ID");
+
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/members/" + id,
+                        {
+                            method: "DELETE"
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+            } catch (error) {
+
+                document
+                    .getElementById("output")
+                    .textContent =
+                    error.message;
+
+            }
+
+        }
+
+
+    </script>
+
+</body>
+
+</html>
