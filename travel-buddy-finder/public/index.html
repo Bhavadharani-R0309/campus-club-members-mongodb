@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Buddy Finder</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f766e;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            margin: 16px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 7px #00000012;
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 5px 2px;
+            border-radius: 5px;
+        }
+
+        input {
+            border: 1px solid #cbd5e1;
+            max-width: 100%;
+        }
+
+        button {
+            background: #0f766e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #115e59;
+        }
+
+        .danger {
+            background: #b91c1c;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            text-align: left;
+        }
+
+        th {
+            background: #ccfbf1;
+        }
+
+        #message {
+            font-weight: bold;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>✈️ Travel Buddy Finder</h1>
+    <p style="text-align:center">
+        Find people who want to travel to your favourite destinations.
+    </p>
+
+    <div class="card">
+        <h2>Add a Travel Buddy</h2>
+
+        <form id="addForm">
+            <input name="buddyId" placeholder="Buddy ID" required>
+            <input name="name" placeholder="Name" required>
+            <input name="destination" placeholder="Destination" required>
+            <input name="budget" type="number" min="0"
+                   placeholder="Budget" required>
+            <input name="tripDuration" type="number" min="1"
+                   placeholder="Trip days" required>
+            <button type="submit">Add Buddy</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Search by Buddy ID</h2>
+        <input id="searchId" placeholder="Enter Buddy ID">
+        <button onclick="searchBuddy()">Search</button>
+        <button onclick="loadBuddies()">Show All</button>
+    </div>
+
+    <div class="card">
+        <h2>Filter by Destination and Budget</h2>
+        <input id="filterDestination" placeholder="Destination">
+        <input id="minBudget" type="number" min="0"
+               placeholder="Budget greater than">
+        <button onclick="filterBuddies()">Filter</button>
+    </div>
+
+    <div class="card">
+        <h2>Search Budget Range</h2>
+        <input id="rangeMin" type="number" min="0"
+               placeholder="Minimum budget">
+        <input id="rangeMax" type="number" min="0"
+               placeholder="Maximum budget">
+        <button onclick="rangeBuddies()">Search Range</button>
+    </div>
+
+    <div class="card">
+        <h2>Update a Travel Buddy</h2>
+        <input id="updateId" placeholder="Buddy ID">
+        <input id="updateDestination" placeholder="New destination">
+        <input id="updateBudget" type="number" min="0"
+               placeholder="New budget">
+        <button onclick="updateBuddy()">Update Buddy</button>
+    </div>
+
+    <div class="card">
+        <h2>Increase Budgets for a Destination</h2>
+        <input id="bulkDestination" placeholder="Destination">
+        <input id="bulkAmount" type="number" placeholder="Amount to add">
+        <button onclick="increaseBudgets()">Increase Budgets</button>
+    </div>
+
+    <div class="card">
+        <h2>Delete a Travel Buddy</h2>
+        <input id="deleteId" placeholder="Buddy ID">
+        <button class="danger" onclick="deleteBuddy()">Delete Buddy</button>
+    </div>
+
+    <div class="card">
+        <h2>Travel Buddy Records</h2>
+        <p>Records are sorted by budget, highest first.</p>
+        <div class="table-container" id="results"></div>
+        <p id="message"></p>
+    </div>
+
+</div>
+
+<script>
+    const results = document.getElementById("results");
+    const message = document.getElementById("message");
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Request failed");
+        }
+
+        return data;
+    }
+
+    function showMessage(text) {
+        message.textContent = text;
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
+    }
+
+    function displayBuddies(buddies) {
+        if (!Array.isArray(buddies) || buddies.length === 0) {
+            results.innerHTML = "<p>No travel buddies found.</p>";
+            return;
+        }
+
+        const rows = buddies.map(b => `
+            <tr>
+                <td>${escapeHtml(b.buddyId || "-")}</td>
+                <td>${escapeHtml(b.name)}</td>
+                <td>${escapeHtml(b.destination)}</td>
+                <td>${escapeHtml(b.budget)}</td>
+                <td>${escapeHtml(b.tripDuration)}</td>
+            </tr>
+        `).join("");
+
+        results.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Buddy ID</th>
+                        <th>Name</th>
+                        <th>Destination</th>
+                        <th>Budget</th>
+                        <th>Trip Days</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+
+    async function loadBuddies() {
+        try {
+            const buddies = await request("/api/buddies");
+            displayBuddies(buddies);
+            showMessage("Travel buddies loaded successfully.");
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    document.getElementById("addForm").addEventListener(
+        "submit",
+        async function(event) {
+            event.preventDefault();
+
+            const form = new FormData(event.target);
+            const buddy = Object.fromEntries(form.entries());
+
+            buddy.budget = Number(buddy.budget);
+            buddy.tripDuration = Number(buddy.tripDuration);
+
+            try {
+                await request("/api/buddies", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(buddy)
+                });
+
+                event.target.reset();
+                showMessage("Travel buddy added successfully.");
+                await loadBuddies();
+            } catch (error) {
+                showMessage(error.message);
+            }
+        }
+    );
+
+    async function searchBuddy() {
+        const id = document.getElementById("searchId").value.trim();
+
+        if (!id) {
+            showMessage("Enter a Buddy ID.");
+            return;
+        }
+
+        try {
+            const buddy = await request(
+                "/api/buddies/" + encodeURIComponent(id)
+            );
+
+            displayBuddies([buddy]);
+            showMessage("Buddy found.");
+        } catch (error) {
+            displayBuddies([]);
+            showMessage(error.message);
+        }
+    }
+
+    async function filterBuddies() {
+        const destination =
+            document.getElementById("filterDestination").value.trim();
+        const minBudget =
+            document.getElementById("minBudget").value;
+
+        const params = new URLSearchParams();
+
+        if (destination) {
+            params.set("destination", destination);
+        }
+
+        if (minBudget !== "") {
+            params.set("minBudget", minBudget);
+        }
+
+        try {
+            const buddies = await request(
+                "/api/buddies/filter/search?" + params
+            );
+
+            displayBuddies(buddies);
+            showMessage("Filter completed.");
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    async function rangeBuddies() {
+        const min = document.getElementById("rangeMin").value;
+        const max = document.getElementById("rangeMax").value;
+
+        if (min === "" || max === "") {
+            showMessage("Enter both minimum and maximum budgets.");
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({ min, max });
+            const buddies = await request(
+                "/api/buddies-range/search?" + params
+            );
+
+            displayBuddies(buddies);
+            showMessage("Budget range search completed.");
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    async function updateBuddy() {
+        const id = document.getElementById("updateId").value.trim();
+        const destination =
+            document.getElementById("updateDestination").value.trim();
+        const budgetText =
+            document.getElementById("updateBudget").value;
+
+        if (!id || !destination || budgetText === "") {
+            showMessage("Enter Buddy ID, destination and budget.");
+            return;
+        }
+
+        try {
+            await request(
+                "/api/buddies/" + encodeURIComponent(id),
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        destination: destination,
+                        budget: Number(budgetText)
+                    })
+                }
+            );
+
+            showMessage("Travel buddy updated successfully.");
+            await loadBuddies();
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    async function increaseBudgets() {
+        const destination =
+            document.getElementById("bulkDestination").value.trim();
+        const amountText =
+            document.getElementById("bulkAmount").value;
+
+        if (!destination || amountText === "") {
+            showMessage("Enter destination and amount.");
+            return;
+        }
+
+        try {
+            const result = await request(
+                "/api/buddies/bulk/increase-budget",
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        destination: destination,
+                        amount: Number(amountText)
+                    })
+                }
+            );
+
+            showMessage(
+                result.message +
+                ". Matched: " + result.matchedCount +
+                ", modified: " + result.modifiedCount
+            );
+
+            await loadBuddies();
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    async function deleteBuddy() {
+        const id = document.getElementById("deleteId").value.trim();
+
+        if (!id) {
+            showMessage("Enter a Buddy ID.");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to delete this travel buddy?")) {
+            return;
+        }
+
+        try {
+            const result = await request(
+                "/api/buddies/" + encodeURIComponent(id),
+                { method: "DELETE" }
+            );
+
+            showMessage(result.message);
+            await loadBuddies();
+        } catch (error) {
+            showMessage(error.message);
+        }
+    }
+
+    loadBuddies();
+</script>
+</body>
+</html>
